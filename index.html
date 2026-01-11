@@ -1,64 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Download Gate</title>
+  <meta charset="UTF-8">
+  <title>Login Page</title>
 </head>
 <body>
 
-<h2 id="status">Checking access…</h2>
+<h2>Enter Download Code</h2>
+<input id="code" placeholder="Enter your code">
+<button onclick="login()">Login</button>
+<p id="msg"></p>
 
 <script>
-// ===== LOGIN CODES (Hardcoded in HTML) =====
-const FREE_CODE = "FREE123";
-const VIP_CODES = ["iPZ6","VIP999","VIP888"];
-
-// ===== SHEET JSON URL =====
+// ===== GOOGLE SHEET JSON =====
 const SHEET_JSON = "https://docs.google.com/spreadsheets/d/1dcKugmmNcr4Uu4RZFOP8PxZSRt-nQpqQUlrF4P9ck8Q/gviz/tq?tqx=out:json";
 
-const code = new URLSearchParams(location.search).get("code");
+function login(){
+  const code = document.getElementById("code").value.trim();
+  const msg = document.getElementById("msg");
 
-if(!code){
-  status.innerText = "Please add ?code= in URL";
-  throw "";
-}
+  if(!code){
+    msg.innerText = "Please enter code!";
+    return;
+  }
 
-fetch(SHEET_JSON)
-.then(res => res.text())
-.then(txt => {
-  // strip Google gviz prefix
-  const json = JSON.parse(txt.substring(47).slice(0, -2));
-  const rows = json.table.rows;
+  fetch(SHEET_JSON)
+  .then(res => res.text())
+  .then(txt => {
+    const json = JSON.parse(txt.substring(47).slice(0,-2));
+    const rows = json.table.rows;
 
-  let vipLink="";
-  let freeLink="";
+    let vipLink = "";
+    let freeLink = "";
+    let found = false;
 
-  // loop through sheet rows
-  for(let r of rows){
-    const c = r.c;
-    const sheetCode = c[0] ? c[0].v : "";
-    const sheetVip  = c[1] ? c[1].v : "";
-    const sheetFree = c[2] ? c[2].v : "";
+    for(let r of rows){
+      const c = r.c;
+      const sheetCode = c[0] ? c[0].v : "";
+      const sheetVip  = c[1] ? c[1].v : "";
+      const sheetFree = c[2] ? c[2].v : "";
 
-    if(sheetCode === code){
-      vipLink = sheetVip;
-      freeLink= sheetFree;
-      break;
+      if(sheetCode === code){
+        vipLink = sheetVip;
+        freeLink= sheetFree;
+        found = true;
+        break;
+      }
     }
-  }
 
-  if(code === FREE_CODE && freeLink){
-    status.innerText = "Free Access ✔ Redirecting…";
-    setTimeout(()=> location.href = freeLink, 1000);
-  }
-  else if(VIP_CODES.includes(code) && vipLink){
-    status.innerText = "VIP Access ✔ Redirecting…";
-    setTimeout(()=> location.href = vipLink, 1000);
-  }
-  else{
-    status.innerText = "Invalid Code or Link Not Found ❌";
-  }
-});
+    if(!found){
+      msg.innerText = "Invalid Code ❌";
+      return;
+    }
+
+    if(code.toUpperCase().startsWith("FREE")){
+      msg.innerText = "Free Access ✔ Redirecting...";
+      setTimeout(()=> location.href = freeLink, 1000);
+    } else {
+      msg.innerText = "VIP Access ✔ Redirecting...";
+      setTimeout(()=> location.href = vipLink, 1000);
+    }
+
+  });
+}
 </script>
 
 </body>
