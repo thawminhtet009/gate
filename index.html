@@ -2,39 +2,64 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Redirecting...</title>
+<title>Download Gate</title>
 </head>
 <body>
-<p id="msg">Checking access...</p>
+
+<h2 id="status">Checking access…</h2>
 
 <script>
-const SHEET =
-"https://docs.google.com/spreadsheets/d/e/2PACX-1vQDDR17PSTZlSevFe2ETSR-QeFf2_0rgfUkGiAFIfUMwR7782EgD3xvqCD_vj9WN23LUlWV3WVd81rj/pub?output=csv";
+// ===== LOGIN CODES (Hardcoded in HTML) =====
+const FREE_CODE = "FREE123";
+const VIP_CODES = ["iPZ6","VIP999","VIP888"];
+
+// ===== SHEET JSON URL =====
+const SHEET_JSON = "https://docs.google.com/spreadsheets/d/1dcKugmmNcr4Uu4RZFOP8PxZSRt-nQpqQUlrF4P9ck8Q/gviz/tq?tqx=out:json";
+
 const code = new URLSearchParams(location.search).get("code");
-const isVIP = localStorage.getItem("vip_user") === "1";
-const msg = document.getElementById("msg");
 
 if(!code){
-  msg.innerText = "Invalid link";
-}else{
-  fetch(SHEET)
-    .then(r => r.text())
-    .then(csv => {
-      const rows = csv.split("\n").map(r => r.split(","));
-      for(let i=1;i<rows.length;i++){
-        if(rows[i][0].trim() === code){
-          location.href = isVIP
-            ? rows[i][1].trim()
-            : rows[i][2].trim();
-          return;
-        }
-      }
-      msg.innerText = "Link not found";
-    })
-    .catch(()=>{
-      msg.innerText = "Cannot load data";
-    });
+  status.innerText = "Please add ?code= in URL";
+  throw "";
 }
+
+fetch(SHEET_JSON)
+.then(res => res.text())
+.then(txt => {
+  // strip Google gviz prefix
+  const json = JSON.parse(txt.substring(47).slice(0, -2));
+  const rows = json.table.rows;
+
+  let vipLink="";
+  let freeLink="";
+
+  // loop through sheet rows
+  for(let r of rows){
+    const c = r.c;
+    const sheetCode = c[0] ? c[0].v : "";
+    const sheetVip  = c[1] ? c[1].v : "";
+    const sheetFree = c[2] ? c[2].v : "";
+
+    if(sheetCode === code){
+      vipLink = sheetVip;
+      freeLink= sheetFree;
+      break;
+    }
+  }
+
+  if(code === FREE_CODE && freeLink){
+    status.innerText = "Free Access ✔ Redirecting…";
+    setTimeout(()=> location.href = freeLink, 1000);
+  }
+  else if(VIP_CODES.includes(code) && vipLink){
+    status.innerText = "VIP Access ✔ Redirecting…";
+    setTimeout(()=> location.href = vipLink, 1000);
+  }
+  else{
+    status.innerText = "Invalid Code or Link Not Found ❌";
+  }
+});
 </script>
+
 </body>
 </html>
