@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Redirecting...</title>
+</head>
+<body>
+<p id="msg">Checking access...</p>
+
+<script>
+const SHEET =
+"https://docs.google.com/spreadsheets/d/1dcKugmmNcr4Uu4RZFOP8PxZSRt-nQpqQUlrF4P9ck8Q/pub?output=csv";
+const code = new URLSearchParams(location.search).get("code");
+const isVIP = localStorage.getItem("vip_user") === "1";
+const msg = document.getElementById("msg");
+
+if(!code){
+  msg.innerText = "Invalid link";
+}else{
+  fetch(SHEET)
+    .then(r => r.text())
+    .then(csv => {
+      const rows = csv.split("\n").map(r => r.split(","));
+      for(let i=1;i<rows.length;i++){
+        if(rows[i][0].trim() === code){
+          location.href = isVIP
+            ? rows[i][1].trim()
+            : rows[i][2].trim();
+          return;
+        }
+      }
+      msg.innerText = "Link not found";
+    })
+    .catch(()=>{
+      msg.innerText = "Cannot load data";
+    });
+}
+</script>
+</body>
+</html>
